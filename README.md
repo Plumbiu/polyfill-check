@@ -3,7 +3,7 @@
 Detect polyfills dependencies in your project and give the ECMAScript versions.
 
 ```bash
-polyfill-check
+npx polyfill-check
 ```
 
 results:
