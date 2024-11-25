@@ -1,0 +1,35 @@
+{
+  "name": "polyfill-check",
+  "version": "0.0.1",
+  "description": "check polyfill in your project",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsup"
+  },
+  "bin": {
+    "polyfill-check": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "polyfill"
+  ],
+  "author": "Plumbiu",
+  "license": "MIT",
+  "devDependencies": {
+    "@plumbiu/eslint-config": "^0.3.8",
+    "@types/node": "^22.9.3",
+    "eslint": "^9.15.0",
+    "esno": "^4.8.0",
+    "fast-glob": "^3.3.2",
+    "string.prototype.trim": "^1.2.9",
+    "terser": "^5.36.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "cac": "^6.7.14",
+    "picocolors": "^1.1.1"
+  }
+}
