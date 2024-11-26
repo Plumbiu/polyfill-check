@@ -19,14 +19,19 @@ export async function tryReadFileWithJson(p: string) {
   }
 }
 
+function isLegalKeywords(keywords: unknown): keywords is string[] {
+  if (!Array.isArray(keywords)) {
+    return false
+  }
+  const keywordsString = keywords.join(',').toLowerCase()
+  return keywordsString.includes('polyfill') || keywords.includes('shim')
+}
+
 export async function getPolyfillFromNodemodules() {
   const modules: Set<string> = new Set()
   const { keywords, name } = (await tryReadFileWithJson('package.json')) ?? {}
-  if (
-    name &&
-    keywords &&
-    (keywords.includes('polyfill') || keywords.includes('shim'))
-  ) {
+
+  if (name && isLegalKeywords(keywords)) {
     modules.add(name.toLowerCase())
   }
   async function readGlob(p: string) {
@@ -40,11 +45,7 @@ export async function getPolyfillFromNodemodules() {
         const filePath = path.join(pkgPath, 'package.json')
         if (fs.existsSync(filePath)) {
           const { keywords, name } = (await tryReadFileWithJson(filePath)) ?? {}
-          if (
-            name &&
-            keywords &&
-            (keywords.includes('polyfill') || keywords.includes('shim'))
-          ) {
+          if (name && isLegalKeywords(keywords)) {
             modules.add(name.toLowerCase())
           }
         } else {
