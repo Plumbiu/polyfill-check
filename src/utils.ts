@@ -1,4 +1,4 @@
-import { EsFile, ModuleSupportSet } from './types'
+import { EsFile, ModuleSupportMap } from './types'
 import pc from 'picocolors'
 import { IgnorePolyfill } from './manual'
 
@@ -14,14 +14,14 @@ function toSnakeKey(s: string) {
 }
 
 export function guessHasModule(
-  set: Set<string>,
+  set: ModuleSupportMap,
   type: string,
   support: string,
 ) {
   const modules: string[] = []
   const addIfExist = (m: string) => {
     m = m.toLowerCase()
-    if (set.has(m) && !IgnorePolyfill.has(m)) {
+    if (set[m] && !IgnorePolyfill.has(m)) {
       modules.push(m)
     }
   }
@@ -57,15 +57,23 @@ export function traverseEsFile(
 export function newLine() {
   console.log()
 }
-export function detectLog(modules: ModuleSupportSet) {
-  const moduleKeys = Object.keys(modules)
-  if (moduleKeys.length === 0) {
+export function detectLog({
+  ES,
+  Other,
+}: {
+  ES: ModuleSupportMap
+  Other: ModuleSupportMap
+}) {
+  const EsKeys = Object.keys(ES)
+  const OtherKeys = Object.keys(Other)
+  if (EsKeys.length === 0 || OtherKeys.length === 0) {
     return
   }
 
   newLine()
-  for (let key of Object.keys(modules)) {
-    const set = modules[key]
+  const hasLogedSet = new Set<string>()
+  for (let key of Object.keys(ES)) {
+    const set = ES[key]
     if (/\d+/.test(key)) {
       key = `ES${key}`
     }
@@ -74,8 +82,24 @@ export function detectLog(modules: ModuleSupportSet) {
     }
     console.log(pc.green(pc.bold(`${key}:`)))
     for (const pkg of [...set]) {
-      console.log(`  ${pc.cyan(pkg)}`)
+      const versions = Other[pkg]
+      for (const v of versions) {
+        console.log(`  ${pc.cyan(pkg)}@${v}`)
+      }
+      hasLogedSet.add(pkg)
     }
     newLine()
   }
+  console.log(pc.green(pc.bold('Other:')))
+
+  for (const pkg of OtherKeys) {
+    if (hasLogedSet.has(pkg)) {
+      continue
+    }
+    const versions = Other[pkg]
+    for (const v of versions) {
+      console.log(`  ${pc.cyan(pkg)}@${v}`)
+    }
+  }
+  newLine()
 }

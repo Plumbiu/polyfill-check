@@ -1,6 +1,6 @@
 import fsp from 'node:fs/promises'
 import fs from 'node:fs'
-import { EsFile, ModuleSupportSet } from './types'
+import { EsFile, ModuleSupportMap } from './types'
 import { traverseEsFile, guessHasModule } from './utils'
 import es_constructor from './es-constructor.json'
 import es_instance from './es-instance.json'
@@ -28,12 +28,7 @@ function isLegalKeywords(keywords: unknown): keywords is string[] {
 }
 
 export async function getPolyfillFromNodemodules() {
-  const modules: Set<string> = new Set()
-  const { keywords, name } = (await tryReadFileWithJson('package.json')) ?? {}
-
-  if (name && isLegalKeywords(keywords)) {
-    modules.add(name.toLowerCase())
-  }
+  const map: ModuleSupportMap = {}
   async function readGlob(p: string) {
     const dirs = await fsp.readdir(p, { withFileTypes: true })
     await Promise.all(
@@ -44,9 +39,13 @@ export async function getPolyfillFromNodemodules() {
         }
         const filePath = path.join(pkgPath, 'package.json')
         if (fs.existsSync(filePath)) {
-          const { keywords, name } = (await tryReadFileWithJson(filePath)) ?? {}
-          if (name && isLegalKeywords(keywords)) {
-            modules.add(name.toLowerCase())
+          const { keywords, name, version } =
+            (await tryReadFileWithJson(filePath)) ?? {}
+          if (name && isLegalKeywords(keywords) && version) {
+            if (!map[name]) {
+              map[name] = new Set()
+            }
+            map[name].add(version)
           }
         } else {
           await readGlob(pkgPath)
@@ -55,25 +54,24 @@ export async function getPolyfillFromNodemodules() {
     )
   }
   await readGlob('node_modules')
-  return modules
+  return map
 }
 
 export async function getPolyfillPkgs() {
-  const modules: ModuleSupportSet = {}
+  const modules: ModuleSupportMap = {}
   const polyfills = await getPolyfillFromNodemodules()
   IgnorePolyfill.forEach((value) => {
-    polyfills.delete(value)
+    delete polyfills[value]
   })
   function addModule(version: string, value: string) {
     if (!modules[version]) {
       modules[version] = new Set()
     }
     modules[version].add(value)
-    polyfills.delete(value)
   }
 
   ManualPolyfill.forEach((value) => {
-    if (polyfills.has(value)) {
+    if (polyfills[value]) {
       addModule('Other', value)
     }
   })
@@ -95,6 +93,5 @@ export async function getPolyfillPkgs() {
       }
     }
   })
-
-  return { Other: polyfills, ...modules }
+  return { Other: polyfills, ES: modules }
 }

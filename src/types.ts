@@ -11,7 +11,7 @@ export type ESVersionKey =
   | '2023'
   | '2024'
 
-export type ModuleSupportSet = Record<string, Set<string>>
+export type ModuleSupportMap = Record<string, Set<string>>
 
 export type EsFile = Record<string, Record<string, string[]>>
 
