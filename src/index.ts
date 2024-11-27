@@ -7,7 +7,7 @@ const cli = cac(name)
 
 cli.command('', 'check polyfill deps').action(async () => {
   const modules = await getPolyfillPkgs()
-  detectLog(modules)
+  modules && detectLog(modules)
 })
 
 cli.version(depVersion)

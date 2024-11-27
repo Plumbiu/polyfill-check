@@ -53,7 +53,7 @@ export async function getPolyfillFromNodemodules() {
           }
         } catch (error) {}
       }),
-    )
+    ).catch(() => {})
   }
 
   await readGlob('node_modules').catch(() => {})
@@ -61,40 +61,42 @@ export async function getPolyfillFromNodemodules() {
 }
 
 export async function getPolyfillPkgs() {
-  const modules: ModuleSupportMap = {}
-  const polyfills = await getPolyfillFromNodemodules()
-  IgnorePolyfill.forEach((value) => {
-    delete polyfills[value]
-  })
-  function addModule(version: string, value: string) {
-    if (!modules[version]) {
-      modules[version] = new Set()
-    }
-    modules[version].add(value)
-  }
-
-  ManualPolyfill.forEach((value) => {
-    if (polyfills[value]) {
-      addModule('Other', value)
-    }
-  })
-
-  traverseEsFile(esConstructor, (type, version, support) => {
-    const guessResult = guessHasModule(polyfills, type, support)
-    if (guessResult.has) {
-      for (const value of guessResult.modules) {
-        addModule(version, value)
+  try {
+    const modules: ModuleSupportMap = {}
+    const polyfills = await getPolyfillFromNodemodules()
+    IgnorePolyfill.forEach((value) => {
+      delete polyfills[value]
+    })
+    function addModule(version: string, value: string) {
+      if (!modules[version]) {
+        modules[version] = new Set()
       }
+      modules[version].add(value)
     }
-  })
 
-  traverseEsFile(esInstance, (type, version, support) => {
-    const guessResult = guessHasModule(polyfills, type, support)
-    if (guessResult.has) {
-      for (const value of guessResult.modules) {
-        addModule(version, value)
+    ManualPolyfill.forEach((value) => {
+      if (polyfills[value]) {
+        addModule('Other', value)
       }
-    }
-  })
-  return { Other: polyfills, ES: modules }
+    })
+
+    traverseEsFile(esConstructor, (type, version, support) => {
+      const guessResult = guessHasModule(polyfills, type, support)
+      if (guessResult.has) {
+        for (const value of guessResult.modules) {
+          addModule(version, value)
+        }
+      }
+    })
+
+    traverseEsFile(esInstance, (type, version, support) => {
+      const guessResult = guessHasModule(polyfills, type, support)
+      if (guessResult.has) {
+        for (const value of guessResult.modules) {
+          addModule(version, value)
+        }
+      }
+    })
+    return { Other: polyfills, ES: modules }
+  } catch (error) {}
 }
