@@ -38,22 +38,25 @@ export async function getPolyfillFromNodemodules() {
           return
         }
         const filePath = path.join(pkgPath, 'package.json')
-        if (fs.existsSync(filePath)) {
-          const { keywords, name, version } =
-            (await tryReadFileWithJson(filePath)) ?? {}
-          if (name && isLegalKeywords(keywords) && version) {
-            if (!map[name]) {
-              map[name] = new Set()
+        try {
+          if (fs.existsSync(filePath)) {
+            const { keywords, name, version } =
+              (await tryReadFileWithJson(filePath)) ?? {}
+            if (name && isLegalKeywords(keywords) && version) {
+              if (!map[name]) {
+                map[name] = new Set()
+              }
+              map[name].add(version)
             }
-            map[name].add(version)
+          } else {
+            await readGlob(pkgPath)
           }
-        } else {
-          await readGlob(pkgPath)
-        }
+        } catch (error) {}
       }),
     )
   }
-  await readGlob('node_modules')
+
+  await readGlob('node_modules').catch(() => {})
   return map
 }
 
